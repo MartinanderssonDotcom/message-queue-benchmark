@@ -23,7 +23,7 @@ public interface Message extends Supplier<String>
      * 
      * @return the message Id
      */
-    default long getId() {
+    default long id() {
         return -1;
     }
     
@@ -32,7 +32,7 @@ public interface Message extends Supplier<String>
      * 
      * @return the queue [name] (never {@code null})
      */
-    String getQueue();
+    String queue();
     
     /**
      * Returns the message content.
