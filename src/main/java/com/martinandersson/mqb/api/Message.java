@@ -15,8 +15,11 @@ public interface Message extends Supplier<String>
      * Returns the message Id.
      * 
      * The returned Id may be {@code -1}, in which case all messages from the
-     * same queue service return {@code -1}. It is assumed that the queue
-     * service implementation has no use for a value-based message identity.
+     * same queue service return {@code -1}. In this case, it is assumed that
+     * the queue service implementation has no use for a value-based message
+     * identity.<p>
+     * 
+     * The id, if used, is not guaranteed to be unique across different queues.
      * 
      * @implSpec
      * The default implementation return {@code -1}.
