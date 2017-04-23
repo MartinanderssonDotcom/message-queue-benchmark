@@ -27,7 +27,6 @@ public class StartJmh
         
         ChainedOptionsBuilder b = new OptionsBuilder()
                 .include(getRegex())
-                .forks(1)
                 .jvmArgsAppend("-ea");
         
         SystemProperties.BENCHMARK_FILE.ifPresent(f -> {
@@ -39,8 +38,6 @@ public class StartJmh
         
         SystemProperties.THREAD_GROUPS.ifPresent(tg -> b.threadGroups(
                         stream(tg.split("-")).mapToInt(Integer::parseInt).toArray()));
-        
-        System.out.println("TH INPUT: " + SystemProperties.THREAD_GROUPS.get());
         
         new Runner(b.build()).run();
     }
