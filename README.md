@@ -1,7 +1,7 @@
 ## Introduction
 
-Will provide an undefined number of different implementations of in-memory
-message queues. Purpose is to benchmark different ways to achieve thread-safety
+Will provide an undefined number of different implementations of an in-memory
+queue service. Purpose is to benchmark different ways to achieve thread-safety
 in Java, given a very real application-context.
 
 TODO: Write more stuff.
@@ -10,10 +10,14 @@ TODO: Write more stuff.
 
 ## Setup
 
+```sh
+git clone https://github.com/martinanderssondotcom/queue-service-benchmark
+```
+
 Project is built using [Gradle], but, because of a crazy-awesome thing called
-"Gradle Wrapper" you don't have to have Gradle installed. In fact, it is
+[Gradle Wrapper] you don't have to have Gradle installed. In fact, it is
 recommended that you use `gradlew` instead of `gradle` when running Gradle tasks
-herein (version dependency).
+(version dependency).
 
 
 
@@ -52,3 +56,4 @@ TODO
 
 
 [Gradle]: <https://gradle.org>
+[Gradle Wrapper]: https://docs.gradle.org/current/userguide/gradle_wrapper.html
