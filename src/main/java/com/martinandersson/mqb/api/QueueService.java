@@ -22,7 +22,10 @@ import java.util.Arrays;
  * 
  * A queue service must support messages that time out. A message that timed out
  * will be re-delivered to next consumer. All consumers must therefore invoke
- * {@link #complete(Message)} to mark the completion of message processing.
+ * {@link #complete(Message)} to mark the completion of message processing.<p>
+ * 
+ * TODO: Define contract better. For example, it is legit for a message to be
+ * "completed" twice.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
