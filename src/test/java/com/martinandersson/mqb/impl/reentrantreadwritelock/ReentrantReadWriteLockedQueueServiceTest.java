@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 /**
- * Tests for {@code ReentrantReadWriteLockedQueueService}.
+ * Unit tests for {@code ReentrantReadWriteLockedQueueService}.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
