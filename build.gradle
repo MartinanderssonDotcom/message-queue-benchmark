@@ -3,7 +3,8 @@
  *     Java 1.8 required.
  *     A system property is set using key "gradle.test.temp.dir".
  *     Enable TestNG as unit test framework.
- *     Provide "run file" support for NetBeans by declaring task 'run'.
+ *     Task 'run' (also enables "run file" support for NetBeans).
+ *     Task 'bench' to execute benchmarks.
  *     Set compiler args "-Xlint:unchecked" and "-Xlint:deprecation".
  */
 
@@ -12,10 +13,18 @@ apply plugin: 'java'
 sourceCompatibility = '1.8'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
+repositories {
+    jcenter()
+}
+
+dependencies {
+    testCompile group: 'org.testng', name: 'testng', version: '6.11'
+    testCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '1.18'
+    testCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '1.18'
+}
+
 test {
     useTestNG()
-    
-    systemProperty 'gradle.test.temp.dir', temporaryDir as String
     
     testLogging.showStandardStreams = true
     
@@ -29,27 +38,38 @@ test {
     }
 }
 
-repositories {
-    jcenter()
-}
-
-dependencies {
-    testCompile group: 'org.testng', name: 'testng', version: '6.11'
-}
-
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
     description += " (version $gradleVersion)"
 }
 
 task run(type: JavaExec, dependsOn: compileJava) {
-    description "Execute a specific class using a Gradle command-line argument like so \"-PmainClass=com.x.y.MyCLass\")."
+    description 'Execute a specific class using a Gradle command-line argument like so "-PmainClass=com.x.y.MyCLass".'
     
     if (project.hasProperty('mainClass')) {
         main = mainClass
     }
     
     classpath = sourceSets.main.runtimeClasspath
+}
+
+task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
+    description = 'Run benchmarks. See the README.md file.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'com.martinandersson.mqb.benchmark.StartJmh';
+    
+    // Move our args to System properties for the JVM that boot the benchmark:
+    ['f', 'r', 'tg'].each { prop ->
+        def arg = project.findProperty(prop) ?: System.properties[prop]
+        
+        if (arg) {
+            systemProperties += [(prop): arg]
+        }
+    }
+}
+
+[run, bench].each { task ->
+    task.group = 'Project-specific'
 }
 
 // Source: http://stackoverflow.com/a/22183825
