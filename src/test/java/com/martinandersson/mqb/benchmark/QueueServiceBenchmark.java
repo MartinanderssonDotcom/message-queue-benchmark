@@ -106,28 +106,31 @@ public class QueueServiceBenchmark
     
     @Setup
     public void setupTrial(BenchmarkParams bParams, ThreadParams tParams) {
-        // Dump benchmark details if we output to file (otherwise console risk
-        // being mute for a very long time!)
-        if (SystemProperties.BENCHMARK_FILE.get() != null) {
-            out.println();
-            out.println("Running " + bParams.getBenchmark());
-            out.println("        " + bParams.generatedBenchmark());
-            
-            String params = "        Implementation " + impl + ", " + queues + " queue(s)";
-            
-            int[] threads = bParams.getThreadGroups();
-
-            if (threads.length != 2) {
-                throw new IllegalArgumentException("Bad \"thread group\" parameter: " +
-                        IntStream.of(threads).mapToObj(Integer::toString).collect(joining(",", "[", "]")));
-            }
-            
-            params += ", " + threads[0] + " reader(s) and " + threads[1] + " writer(s) in " + tParams.getGroupCount() + " group(s)";
-            
-            out.println(params);
+        qs = impl.get();
+        
+        if (!SystemProperties.BENCHMARK_FILE.isPresent()) {
+            return;
         }
         
-        qs = impl.get();
+        // Console risk being mute for a very long time if we output to file,
+        // so be kind and dump benchmark details.
+        
+        out.println();
+        out.println("Running " + bParams.getBenchmark());
+        out.println("        " + bParams.generatedBenchmark());
+
+        String params = "        Implementation " + impl + ", " + queues + " queue(s)";
+
+        int[] threads = bParams.getThreadGroups();
+
+        if (threads.length != 2) {
+            throw new IllegalArgumentException("Bad \"thread group\" parameter: " +
+                    IntStream.of(threads).mapToObj(Integer::toString).collect(joining(",", "[", "]")));
+        }
+
+        params += ", " + threads[0] + " reader(s) and " + threads[1] + " writer(s) in " + tParams.getGroupCount() + " group(s)";
+
+        out.println(params);
     }
     
     @State(Scope.Thread)

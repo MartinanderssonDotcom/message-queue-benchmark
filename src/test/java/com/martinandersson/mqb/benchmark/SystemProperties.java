@@ -198,6 +198,17 @@ public enum SystemProperties
     }
     
     /**
+     * Returns {@code true} if this system property is present, otherwise {@code
+     * false}.
+     * 
+     * @return {@code true} if this system property is present, otherwise {@code
+     * false}
+     */
+    public boolean isPresent() {
+        return get() != null;
+    }
+    
+    /**
      * If value is present, apply the specified {@code consumer}.
      * 
      * @param consumer  property consumer
