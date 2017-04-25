@@ -1,10 +1,9 @@
 /*
  * Some things this build script file do:
  *     Java 1.8 required.
- *     A system property is set using key "gradle.test.temp.dir".
  *     Enable TestNG as unit test framework.
  *     Task 'run' (also enables "run file" support for NetBeans).
- *     Task 'bench' to execute benchmarks.
+ *     Task 'bench' to run benchmarks.
  *     Set compiler args "-Xlint:unchecked" and "-Xlint:deprecation".
  */
 
@@ -58,7 +57,7 @@ task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     classpath = sourceSets.test.runtimeClasspath
     main = 'com.martinandersson.mqb.benchmark.StartJmh';
     
-    // Move our args to System properties for the JVM that boot the benchmark:
+    // Move expected Gradle properties to System properties for the JVM that boot the benchmark:
     ['f', 'r', 'tg'].each { prop ->
         def arg = project.findProperty(prop) ?: System.properties[prop]
         
