@@ -37,7 +37,17 @@ public class StartJmh
         });
         
         SystemProperties.THREAD_GROUPS.ifPresent(tg -> b.threadGroups(
-                        stream(tg.split("-")).mapToInt(Integer::parseInt).toArray()));
+                stream(tg.split("-")).mapToInt(str -> {
+                    // TODO: Update JavaDoc of THREAD_GROUPS!
+                    final char last = str.charAt(str.length() - 1);
+                    
+                    if (last == 'x' || last == 'X') {
+                        return Integer.parseInt(str.substring(0, str.length() - 1)) *
+                            Runtime.getRuntime().availableProcessors();
+                    }
+                    
+                    return Integer.parseInt(str);
+                }).toArray()));
         
         new Runner(b.build()).run();
     }
