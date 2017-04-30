@@ -52,6 +52,19 @@ task run(type: JavaExec, dependsOn: compileJava) {
     classpath = sourceSets.main.runtimeClasspath
 }
 
+task reorganize(type: JavaExec, dependsOn: compileJava) {
+    description 'Execute Reorganize class, please specify JMH:s output file like so "-Pf=my_output.txt".'
+    main = 'com.martinandersson.mqb.benchmark.Reorganize';
+    
+    def f = project.findProperty('f') ?: System.properties['f']
+    
+    if (f) {
+        systemProperties += ['f': f]
+    }
+    
+    classpath = sourceSets.main.runtimeClasspath
+}
+
 task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     description = 'Run benchmarks. See the README.md file.'
     classpath = sourceSets.test.runtimeClasspath
@@ -67,7 +80,7 @@ task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     }
 }
 
-[run, bench].each { task ->
+[run, reorganize, bench].each { task ->
     task.group = 'Project-specific'
 }
 
