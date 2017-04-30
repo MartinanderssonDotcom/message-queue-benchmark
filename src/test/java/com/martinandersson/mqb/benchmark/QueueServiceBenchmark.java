@@ -2,7 +2,10 @@ package com.martinandersson.mqb.benchmark;
 
 import com.martinandersson.mqb.api.Message;
 import com.martinandersson.mqb.api.QueueService;
+import com.martinandersson.mqb.impl.concurrent.ConcurrentQSWithPojoMessage;
+import com.martinandersson.mqb.impl.concurrent.stamped.ConcurrentQSWithStampedMessage;
 import com.martinandersson.mqb.impl.reentrantreadwritelock.ReentrantReadWriteLockedQueueService;
+import com.martinandersson.mqb.impl.serialized.SynchronizedQueueService;
 import static java.lang.System.out;
 import java.time.Duration;
 import java.util.Iterator;
@@ -93,8 +96,10 @@ public class QueueServiceBenchmark
     private static final Duration MSG_TIMEOUT = Duration.ofDays(999);
     
     public enum Implementation implements Supplier<QueueService> {
-        ReentrantReadWriteLock (ReentrantReadWriteLockedQueueService::new);
-        // TODO: Add the rest..
+        Synchronized           (SynchronizedQueueService::new),
+        ReentrantReadWriteLock (ReentrantReadWriteLockedQueueService::new),
+        ConcurrentPojo         (ConcurrentQSWithPojoMessage::new),
+        ConcurrentStamped      (ConcurrentQSWithStampedMessage::new);
         
         private final Function<Duration, QueueService> delegate;
         
