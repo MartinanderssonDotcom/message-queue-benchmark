@@ -86,26 +86,25 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
      */
     @Override
     public final Message pull(String queue) {
-        // Not likely that someone ask for a queue that does not exist? So we
-        // go for a write lock directly. Otherwise, one could lockForReading()
-        // first before escalating.
+        boolean[] empty = {true};
         
-        return c.map().writeGet(m -> {
+        final Message v = c.map().readGet(m -> {
             Lockable<Queue<M>> lq = m.get(queue);
 
             if (lq == null) {
+                // ..don't try a delete, no need!
+                empty[0] = false;
                 return null;
             }
             
+            // Must write-lock since we remove completed messages.
             return lq.writeGet(q -> {
                 Iterator<M> it = q.iterator();
                 
                 M msg = null;
                 
-                boolean empty = true;
-                
                 iteration: while (it.hasNext()) {
-                    empty = false;
+                    empty[0] = false;
                     
                     final M impl = it.next();
                     
@@ -123,13 +122,15 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
                     }
                 }
                 
-                if (empty) {
-                    tryDelete(queue);
-                }
-                
                 return msg;
             });
         });
+        
+        if (empty[0]) {
+            tryDelete(queue);
+        }
+        
+        return v;
     }
     
     /**
