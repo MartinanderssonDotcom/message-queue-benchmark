@@ -8,14 +8,15 @@ import com.martinandersson.mqb.impl.reentrantreadwritelock.ReentrantReadWriteLoc
 import com.martinandersson.mqb.impl.serialized.SynchronizedQueueService;
 import static java.lang.System.out;
 import java.time.Duration;
+import static java.util.Arrays.stream;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Group;
@@ -151,11 +152,26 @@ public class QueueServiceBenchmark
         
         @Setup
         public void setupThread(QueueServiceBenchmark state) {
-            Supplier<String> gen = () ->
-                    "Q" + ThreadLocalRandom.current().nextInt(1, state.queues + 1);
+            int[] seq = shuffle(IntStream.rangeClosed(1, state.queues).toArray());
             
             name = new FixedCostLoopingIterator<>(
-                    Stream.generate(gen).limit(state.queues));
+                    stream(seq).mapToObj(x -> "Q" + x));
+        }
+        
+        private static int[] shuffle(int[] arr) {
+            final Random rnd = ThreadLocalRandom.current();
+            
+            // Thank you: http://stackoverflow.com/a/1520212
+            for (int i = arr.length - 1; i > 0; --i) {
+                int index = rnd.nextInt(i + 1);
+                
+                // Swap
+                int e = arr[index];
+                arr[index] = arr[i];
+                arr[i] = e;
+            }
+            
+            return arr;
         }
         
         @Override
