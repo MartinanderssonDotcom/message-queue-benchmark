@@ -59,7 +59,7 @@ public class QueueServiceBenchmark
     
     QueueService qs;
     
-    @Param("1") // TODO: 1, 100, 1_000
+    @Param({"1", "100", "1000"})
     int queues;
     
     
