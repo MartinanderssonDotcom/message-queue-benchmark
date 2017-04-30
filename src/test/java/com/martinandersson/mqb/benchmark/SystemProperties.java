@@ -60,6 +60,8 @@ public enum SystemProperties
      * 
      * The property key is "tg" and the property is optional.<p>
      * 
+     * TODO: Value example.<p>
+     * 
      * Specifying this property for benchmarks that has no benchmark "groups"
      * will totally crash with something similar to this:
      * <pre>

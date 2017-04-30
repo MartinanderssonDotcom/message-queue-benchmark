@@ -45,6 +45,10 @@ public final class FixedCostLoopingIterator<E> implements Iterator<E>
      */
     @Override
     public E next() {
+        // We could check elements.length and if 1, return elements[0] which
+        // would save a few cycles for single-element arrays. But we rather have
+        // all benchmarks no matter queue size pay the same price.
+        
         final E e = elements[pos++];
                 
         if (pos == elements.length) {

@@ -28,9 +28,16 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.ThreadParams;
 
 /**
- * Queue service benchmarks.
+ * Queue service benchmarks.<p>
+ * 
+ * All benchmark methods herein are "asymmetric" with one workload for reader
+ * threads and one workload for writer threads. Number of readers/writers are
+ * specified using a system property "tg". For example, "1-2" will yield 1 reader
+ * thread and 1 writer thread.
  * 
  * @author Martin Anderson (webmaster at martinandersson.com)
+ * 
+ * @see SystemProperties#THREAD_GROUPS
  */
 // TODO: Production values!
 @Warmup(iterations = 0)
