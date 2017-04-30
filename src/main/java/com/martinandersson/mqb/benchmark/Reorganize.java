@@ -7,6 +7,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import static java.nio.file.StandardOpenOption.APPEND;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
@@ -42,6 +44,8 @@ import static java.util.stream.Collectors.toList;
 public class Reorganize
 {
     private static final String FILE = System.getProperty("f");
+    
+    private static final String TWO_OR_MORE_WS = "\\s{2,}+";
     
     private static final int
             BENCHMARK  = 0,
@@ -123,8 +127,43 @@ public class Reorganize
         
         Files.write(file, out, ISO_8859_1);
         
+        
+        // Append comma separated values (can be used for Excel import)
+        
+        List<String> cs = new ArrayList<>();
+        cs.add(System.lineSeparator() + "Comma separated values..");
+        
+        out.stream()
+                .map(l -> {
+                    String replace = null;
+                    
+                    switch (c(l, BENCHMARK)) {
+                        case "QueueServiceBenchmark.thrpt":
+                            replace = "Total";
+                            break;
+                        case "QueueServiceBenchmark.thrpt:reader_thrpt":
+                            replace = "Reader";
+                            break;
+                        case "QueueServiceBenchmark.thrpt:writer_thrpt":
+                            replace = "Writer";
+                            break;
+                    }
+                    
+                    return replace == null ? l :
+                            l.replace(c(l, BENCHMARK), replace);
+                })
+                .map(l -> l.replaceAll(TWO_OR_MORE_WS + "|\\s±\\s", ","))
+                .forEach(cs::add);
+        
+        Files.write(file, cs, ISO_8859_1, APPEND);
+        
+        final String h = header;
+        
+        Predicate<String> notHeader = s -> !h.equals(s),
+                          notEmpty  = s -> !s.isEmpty();
+        
         System.out.printf("Dumped %s prettified record(s) to  >  %s%n",
-                out.size(), file.toAbsolutePath());
+                out.stream().filter(notHeader.and(notEmpty)).count(), file.toAbsolutePath());
     }
     
     private static final Map<String, String[]> COLUMNS = new HashMap<>();
@@ -138,7 +177,7 @@ public class Reorganize
      * @return column value
      */
     private static String c(String record, int index) {
-        return COLUMNS.computeIfAbsent(record, r -> r.split("\\s{2,}+"))[index];
+        return COLUMNS.computeIfAbsent(record, r -> r.split(TWO_OR_MORE_WS))[index];
     }
     
     private static String diff(String from, String to) {
