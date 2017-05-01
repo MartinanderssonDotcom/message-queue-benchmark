@@ -16,7 +16,8 @@ import java.util.List;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Take JMH:s summary from a results file and reorganize it.<p>
+ * Reorganize a JMH results file and write to a new file specified with property
+ * "rf".<p>
  * 
  * This class was written only as a quick and dirty (non-extensible,
  * non-sensible, massive pain-in-the-ass script) yet useful utility for the
