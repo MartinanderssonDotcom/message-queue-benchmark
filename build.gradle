@@ -43,7 +43,7 @@ task wrapper(type: Wrapper) {
 }
 
 task run(type: JavaExec, dependsOn: compileJava) {
-    description 'Execute a specific class using a Gradle command-line argument like so "-PmainClass=com.x.y.MyCLass".'
+    description 'Execute a specific class using a Gradle command-line argument like so "-PmainClass=com.x.y.MyClass".'
     
     if (project.hasProperty('mainClass')) {
         main = mainClass
