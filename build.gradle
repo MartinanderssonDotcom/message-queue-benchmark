@@ -3,6 +3,7 @@
  *     Java 1.8 required.
  *     Enable TestNG as unit test framework.
  *     Task 'run' (also enables "run file" support for NetBeans).
+ *     Task 'reorganize' for reorganizing JMH result files.
  *     Task 'bench' to run benchmarks.
  *     Set compiler args "-Xlint:unchecked" and "-Xlint:deprecation".
  */
