@@ -4,6 +4,7 @@ import java.nio.file.Paths;
 import static java.util.Arrays.stream;
 import java.util.regex.Pattern;
 import static java.util.stream.Collectors.joining;
+import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
@@ -22,18 +23,24 @@ public class StartJmh
     public static void main(String... ignored)
             throws RunnerException, ClassNotFoundException
     {
-        // TODO: ResultFormatType
         // TODO: VerboseMode
         
         ChainedOptionsBuilder b = new OptionsBuilder()
                 .include(getRegex())
+                .shouldDoGC(true)
                 .jvmArgsAppend("-ea");
         
-        SystemProperties.BENCHMARK_FILE.ifPresent(f -> {
-            b.output(f);
+        SystemProperties.LOG_FILE.ifPresent(lf -> {
+            b.output(lf);
             
-            System.out.println("Writing results to file: " +
-                    Paths.get(f).toAbsolutePath());
+            System.out.println("Logging to file  >  " + absolute(lf));
+        });
+        
+        SystemProperties.RESULT_FILE.ifPresent(rf -> {
+            b.result(rf);
+            b.resultFormat(ResultFormatType.CSV);
+            
+            System.out.println("Writing results to file  >  " + absolute(rf));
         });
         
         SystemProperties.THREAD_GROUPS.ifPresent(tg -> b.threadGroups(
@@ -65,5 +72,9 @@ public class StartJmh
         }
         
         return regex;
+    }
+    
+    private static String absolute(String file) {
+        return Paths.get(file).toAbsolutePath().toString();
     }
 }

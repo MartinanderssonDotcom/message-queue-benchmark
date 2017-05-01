@@ -19,7 +19,9 @@ import static java.util.stream.Collectors.joining;
 import java.util.stream.IntStream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Group;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -27,6 +29,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.ThreadParams;
@@ -44,7 +47,8 @@ import org.openjdk.jmh.infra.ThreadParams;
  * @see SystemProperties#THREAD_GROUPS
  */
 // TODO: Production values!
-@Warmup(iterations = 0)
+@Fork(1)
+@Warmup(iterations = 10)
 @Measurement(iterations = 10, time = 1)
 @OutputTimeUnit(MICROSECONDS)
 @State(Scope.Benchmark)
@@ -53,8 +57,8 @@ public class QueueServiceBenchmark
     // Iteration- and batch sizes for single shot benchmarks.
     // -----
     
-    private static final int SS_ITERATIONS = 1, // TODO: 100
-                             SS_BATCH_SIZE = 1; // TODO: 100_000
+    private static final int SS_ITERATIONS = 50, // TODO: 100
+                             SS_BATCH_SIZE = 100_000;
     
     
     
@@ -119,13 +123,11 @@ public class QueueServiceBenchmark
     
     @Setup
     public void setupTrial(BenchmarkParams bParams, ThreadParams tParams) {
-        qs = impl.get();
-        
-        if (!SystemProperties.BENCHMARK_FILE.isPresent()) {
+        if (!SystemProperties.LOG_FILE.isPresent()) {
             return;
         }
         
-        // Console risk being mute for a very long time if we output to file,
+        // Console risk being mute for a very long time if we log to file,
         // so be kind and dump benchmark details.
         
         out.println();
@@ -144,6 +146,16 @@ public class QueueServiceBenchmark
         params += ", " + threads[0] + " reader(s) and " + threads[1] + " writer(s) in " + tParams.getGroupCount() + " group(s)";
 
         out.println(params);
+    }
+    
+    @Setup(Level.Iteration)
+    public void setupIteration() {
+        qs = impl.get();
+    }
+    
+    @TearDown(Level.Iteration)
+    public void tearDownIteration() {
+        qs = null;
     }
     
     @State(Scope.Thread)

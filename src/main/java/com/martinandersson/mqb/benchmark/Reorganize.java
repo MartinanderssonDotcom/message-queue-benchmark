@@ -2,188 +2,167 @@ package com.martinandersson.mqb.benchmark;
 
 import java.io.IOException;
 import static java.lang.Double.parseDouble;
+import static java.lang.Integer.compare;
 import java.math.RoundingMode;
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import static java.nio.file.StandardOpenOption.APPEND;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import static java.util.Comparator.comparing;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import static java.util.Arrays.stream;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.function.Predicate;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.joining;
 
 /**
- * Take JMH:s summary from an output/results file and prettify it.<p>
+ * Take JMH:s summary from a results file and reorganize it.<p>
  * 
  * This class was written only as a quick and dirty (non-extensible,
  * non-sensible, massive pain-in-the-ass script) yet useful utility for the
- * author instead of having to "group" and sort {@code QueueServiceBenchmark}
- * throughput results by hand in a text editor. You should probably not use it
- * for anything else?<p>
+ * author instead of having to sort {@code QueueServiceBenchmark} throughput
+ * results by hand in a text editor. You should probably not use it for anything
+ * else?<p>
  * 
- * What it does is to group throughput summary records in the output file by
- * queue size, then by benchmark name, finally sort the scores descendingly and
- * add a trailing column to show the percentage gain compared to the previous
- * record.
+ * What it does is to sort throughput summary records in the result file by
+ * queue size, benchmark name and descending scores. Also we'll slap on a cute
+ * column to show the percentage gain comparing each row to the trailing loser.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
 public class Reorganize
 {
-    private static final String FILE = System.getProperty("f");
+    private static final String
+            FILE        = System.getProperty("rf"),
+            BENCHMARK   = "Benchmark",
+            SCORE       = "Score",
+            SCORE_ERROR = "Score Error (99.9%)",
+            UNIT        = "Unit",
+            P_IMPL      = "Param: impl",
+            P_QUEUES    = "Param: queues";
     
-    private static final String TWO_OR_MORE_WS = "\\s{2,}+";
-    
-    private static final int
-            BENCHMARK  = 0,
-            QUEUE_SIZE = 2,
-            SCORE      = 5;
+    private static final String[] KEEP_ORDERLY = {
+            BENCHMARK, P_IMPL, P_QUEUES, SCORE, SCORE_ERROR, UNIT };
     
     
     
     public static void main(String... ignored) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(FILE), ISO_8859_1);
+        List<String> lines = Files.readAllLines(Paths.get(FILE));
+        List<Row>    data  = new ArrayList<>();
         
-        Iterator<String> it = lines.iterator();
+        Row header = null;
         
-        String header = null;
-        
-        
-        // Keep only the JMH summary lines (skip details)..
-        while (it.hasNext()) {
-            String l = it.next();
-            
-            it.remove();
-            
-            if (l.startsWith("Benchmark")) {
-                header = l;
-                break;
+        for (String l : lines) {
+            if (header == null) {
+                header = Row.header(l);
+            }
+            else {
+                Row r = Row.data(header, l);
+                
+                // Not interested in gotMessage- and gotNull subresults
+                if (!r.value(BENCHMARK).matches(".*\\b(gotMessage|gotNull)\\b.*")) {
+                    data.add(Row.data(header, l));
+                }
             }
         }
         
+        data.sort(Comparator.<Row, String>comparing(r ->
+                r.value(P_QUEUES)).thenComparing(r ->
+                r.value(BENCHMARK)).thenComparing(Comparator.<Row, Double>comparing(r ->
+                parseScore(r)).reversed()));
         
-        // Group by 1) Queue size, 2) Benchmark.
-        // Sort by descending score.
-        // Add winner percentage gain compared to the previous lower ranked QS implementation.
         
-        final List<String> out = new ArrayList<>();
+        List<String> out = new ArrayList<>();
         
-        out.add(header);
+        // Add header and toss on an extra Gain column.
+        out.add(stream(KEEP_ORDERLY).collect(joining(Row.DELIMITER)) + Row.DELIMITER + "Gain");
         
-        Map<String, List<String>> byQueue = lines.stream()
-                // Only interested in throughput
-                .filter(l -> l.contains("thrpt"))
-                // Not interested in gotMessage- and gotNull subresults
-                .filter(l -> !l.matches(".*\\b(gotMessage|gotNull)\\b.*"))
-                .collect(groupingBy(l -> c(l, QUEUE_SIZE), TreeMap::new, toList()));
-        
-        byQueue.forEach((q, recordsInQueue) -> {
-            Map<String, NavigableSet<String>> byBenchmark = recordsInQueue.stream().collect(groupingBy(
-                    l -> c(l, BENCHMARK),
-                    LinkedHashMap::new,
-                    toCollection(() -> new TreeSet<>(comparing(l -> c((String) l, SCORE)).reversed()))));
+        for (int i = 0; i < data.size(); ++i) {
+            Row row = data.get(i);
             
-            byBenchmark.entrySet().stream()
-                    .map(Map.Entry::getValue)
-                    .forEach(recordsInBenchmark -> {
-                        for (String prev : recordsInBenchmark) {
-                            String next = recordsInBenchmark.higher(prev);
-                            
-                            // Only compute difference if we have a next record
-                            // to compare with (the loosing implementation)!
-                            out.add(next == null ? prev :
-                                    prev + "  +" + diff(next, prev));
+            String o = row.mkString(
+                    // Keep all labels/columns as defined in KEEP_ORDERLY (discard the others).
+                    lbl -> pos(lbl) != -1,
+                    // Order them according to position in KEEP_ORDERLY.
+                    (a, b) -> compare(pos(a), pos(b)),
+                    // Replace abhorent benchmark names with leet names.
+                    (lbl, val) -> {
+                        String replace = val;
+                        
+                        if (lbl.equals(BENCHMARK)) {
+                            switch (val.replaceFirst("com.martinandersson.mqb.benchmark.QueueServiceBenchmark.", "")) {
+                                case "thrpt":
+                                    replace = "Total";
+                                    break;
+                                case "thrpt:reader_thrpt":
+                                    replace = "Reader";
+                                    break;
+                                case "thrpt:writer_thrpt":
+                                    replace = "Writer";
+                                    break;
+                            }
                         }
+                        return replace;
                     });
             
-            // Aka. newline after each queue size.
-            out.add("");
-        });
+            // Add percentage gain if applicable (there's a row below in same
+            // benchmark- and queue category).
+            if (i < data.size() - 1) {
+                Row next = data.get(i + 1);
+                
+                if (next.value(BENCHMARK).equals(row.value(BENCHMARK)) &&
+                    next.value(P_QUEUES).equals(row.value(P_QUEUES)))
+                {
+                    o += Row.DELIMITER + diff(next, row);
+                }
+            }
+            
+            out.add(o);
+        }
         
         
-        // Dump to new file tagged "_summary"..
+        // Dump to new file tagged "_reorg"..
         
         final int dot = FILE.lastIndexOf('.');
         
         String outFile = (dot == -1 ? FILE : FILE.substring(0, dot))
-                + "_summary";
+                + "_reorg";
         
         String ext = dot == -1 ? "" : FILE.substring(dot);
         
         Path file = Paths.get(FILE).resolveSibling(outFile + ext);
         
-        Files.write(file, out, ISO_8859_1);
+        Files.write(file, out);
         
-        
-        // Append comma separated values (can be used for Excel import)
-        
-        List<String> cs = new ArrayList<>();
-        cs.add(System.lineSeparator() + "Comma separated values..");
-        
-        out.stream()
-                .map(l -> {
-                    String replace = null;
-                    
-                    switch (c(l, BENCHMARK)) {
-                        case "QueueServiceBenchmark.thrpt":
-                            replace = "Total";
-                            break;
-                        case "QueueServiceBenchmark.thrpt:reader_thrpt":
-                            replace = "Reader";
-                            break;
-                        case "QueueServiceBenchmark.thrpt:writer_thrpt":
-                            replace = "Writer";
-                            break;
-                    }
-                    
-                    return replace == null ? l :
-                            l.replace(c(l, BENCHMARK), replace);
-                })
-                .map(l -> l.replaceAll(TWO_OR_MORE_WS + "|\\s±\\s", ","))
-                .forEach(cs::add);
-        
-        Files.write(file, cs, ISO_8859_1, APPEND);
-        
-        final String h = header;
-        
-        Predicate<String> notHeader = s -> !h.equals(s),
-                          notEmpty  = s -> !s.isEmpty();
-        
-        System.out.printf("Dumped %s prettified record(s) to  >  %s%n",
-                out.stream().filter(notHeader.and(notEmpty)).count(), file.toAbsolutePath());
+        System.out.printf("Dumped %s reorganized record(s) to  >  %s%n",
+                out.size() - 1, file.toAbsolutePath());
     }
     
-    private static final Map<String, String[]> COLUMNS = new HashMap<>();
-    
-    /**
-     * Returns the column value of the specified {@code record}.
-     * 
-     * @param record  input string
-     * @param index   column index
-     * 
-     * @return column value
-     */
-    private static String c(String record, int index) {
-        return COLUMNS.computeIfAbsent(record, r -> r.split(TWO_OR_MORE_WS))[index];
+    private static int pos(String label) {
+        for (int i = 0; i < KEEP_ORDERLY.length; ++i) {
+            if (KEEP_ORDERLY[i].equals(label)) {
+                return i;
+            }
+        }
+        
+        return -1;
     }
     
-    private static String diff(String from, String to) {
-        // Don't parse the error margin..
-        return diff(parseDouble(c(from, SCORE).split("\\s", 2)[0]),
-                    parseDouble(c(to,   SCORE).split("\\s", 2)[0]));
+    private static double parseScore(Row row) {
+        try {
+            return parseDouble(row.value(SCORE));
+        }
+        catch (NumberFormatException e) {
+            NumberFormatException e0 = new NumberFormatException(
+                    e.getMessage() + ", Row: " + row);
+
+            e0.addSuppressed(e);
+            throw e0;
+        }
+    }
+    
+    private static String diff(Row from, Row to) {
+        return diff(parseScore(from), parseScore(to));
     }
     
     private static String diff(double from, double to) {
@@ -199,8 +178,8 @@ public class Reorganize
             = ThreadLocal.withInitial(() -> {
                 NumberFormat nf = DecimalFormat.getPercentInstance();
                 
+                nf.setGroupingUsed(false);
                 nf.setMaximumFractionDigits(2);
-                
                 // Default is RoundingMode.HALF_EVEN. We do:
                 nf.setRoundingMode(RoundingMode.HALF_UP);
                 

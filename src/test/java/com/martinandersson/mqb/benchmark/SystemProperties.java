@@ -47,13 +47,18 @@ public enum SystemProperties
     BENCHMARK_REGEX ("r", "benchmark regex"),
     
     /**
-     * Redirects the output of JMH to a file.<p>
+     * Redirects the log output of JMH from console to a file.<p>
      * 
-     * The property key is "f" and the property is optional.<p>
-     * 
-     * Setting this property will also make JMH's output to the console go away.
+     * The property key is "lf" and the property is optional.
      */
-    BENCHMARK_FILE ("f", "benchmark file"),
+    LOG_FILE ("lf", "log file"),
+    
+    /**
+     * Will export the results to a comma-separated file.<p>
+     * 
+     * The property key is "rf" and the property is optional.
+     */
+    RESULT_FILE ("rf", "result file"),
     
     /**
      * Thread counts for grouped benchmark methods.<p>

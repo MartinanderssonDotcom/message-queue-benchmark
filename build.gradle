@@ -53,13 +53,13 @@ task run(type: JavaExec, dependsOn: compileJava) {
 }
 
 task reorganize(type: JavaExec, dependsOn: compileJava) {
-    description 'Execute Reorganize class, please specify JMH:s output file like so "-Pf=my_output.txt".'
+    description 'Execute Reorganize class, please specify JMH:s result file like so "-Prf=my_result.txt".'
     main = 'com.martinandersson.mqb.benchmark.Reorganize';
     
-    def f = project.findProperty('f') ?: System.properties['f']
+    def rf = project.findProperty('rf') ?: System.properties['rf']
     
-    if (f) {
-        systemProperties += ['f': f]
+    if (rf) {
+        systemProperties += ['rf': rf]
     }
     
     classpath = sourceSets.main.runtimeClasspath
@@ -71,11 +71,11 @@ task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     main = 'com.martinandersson.mqb.benchmark.StartJmh';
     
     // Move expected Gradle properties to System properties for the JVM that boot the benchmark:
-    ['f', 'r', 'tg'].each { prop ->
-        def arg = project.findProperty(prop) ?: System.properties[prop]
+    ['r', 'tg', 'lf', 'rf'].each { p ->
+        def arg = project.findProperty(p) ?: System.properties[p]
         
         if (arg) {
-            systemProperties += [(prop): arg]
+            systemProperties += [(p): arg]
         }
     }
 }
