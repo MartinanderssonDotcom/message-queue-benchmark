@@ -71,7 +71,9 @@ public interface QueueService
     }
     
     /**
-     * Pull head of specified {@code queue}.
+     * Pull head of specified {@code queue}.<p>
+     * 
+     * TODO: Rename to poll()??
      * 
      * @param queue  queue [name]
      * 
