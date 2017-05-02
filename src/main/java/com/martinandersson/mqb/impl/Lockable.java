@@ -14,10 +14,12 @@ import java.util.function.Supplier;
  * How - and even if - a lock is used is implementation details. This API unify
  * the void or return-based actions a client wish to execute on the entity.<p>
  * 
- * Actions are branded as either <i>read</i> or <i>write</i>, in order to
- * support lock-based implementations that make a distinction between actions
- * that do not mutate the lockable thing versus actions that do. Client is
- * expected to follow suite!<p>
+ * Actions are branded as <i>unsafe</i>, <i>read</i> or <i>write</i>.<p>
+ * 
+ * Unsafe actions must be routed directly to the lockable thing. Client calling
+ * this method has yet made the lockable visible to other threads.<p>
+ * 
+ * Read actions does not mutate the lockable thing, write actions do.<p>
  * 
  * The implementation does not need to use locks. In particular, the
  * implementation does not need to separate between readers and writers. Any
@@ -31,9 +33,32 @@ import java.util.function.Supplier;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-@FunctionalInterface
 public interface Lockable<T>
 {
+    /**
+     * Invoke {@code task} with the lockable thing without passing through the
+     * lock.
+     * 
+     * @param task  task to perform
+     */
+    default void unsafe(Consumer<T> task) {
+        unsafeGet(t -> {
+            task.accept(t);
+            return null;
+        });
+    }
+    
+    /**
+     * Invoke {@code task} with the lockable thing without passing through the
+     * lock.
+     * 
+     * @param <V>   function return type
+     * @param task  task to perform
+     * 
+     * @return function return value
+     */
+    <V> V unsafeGet(Function<T, V> task);
+    
     /**
      * Invoke the read-only {@code task} with the lockable thing.
      * 
@@ -113,6 +138,10 @@ public interface Lockable<T>
      */
     static <T> Lockable<T> noLock(T thing) {
         return new Lockable<T>(){
+            @Override public <V> V unsafeGet(Function<T, V> task) {
+                return task.apply(thing);
+            }
+            
             @Override public <V> V writeGet(Function<T, V> task) {
                 return task.apply(thing);
             }
@@ -149,6 +178,10 @@ public interface Lockable<T>
      */
     static <T> Lockable<T> mutex(T thing) {
         return new Lockable<T>(){
+            @Override public <V> V unsafeGet(Function<T, V> task) {
+                return task.apply(thing);
+            }
+            
             @Override public <V> V writeGet(Function<T, V> task) {
                 synchronized (thing) {
                     return task.apply(thing);
@@ -188,6 +221,10 @@ public interface Lockable<T>
      */
     static <T> Lockable<T> lock(T thing, Lock lock) {
         return new Lockable<T>(){
+            @Override public <V> V unsafeGet(Function<T, V> task) {
+                return task.apply(thing);
+            }
+            
             @Override public <V> V writeGet(Function<T, V> task) {
                 lock.lock();
                 
@@ -215,6 +252,10 @@ public interface Lockable<T>
         return new Lockable<T>(){
             final Lock r = lock.readLock(),
                        w = lock.writeLock();
+            
+            @Override public <V> V unsafeGet(Function<T, V> task) {
+                return task.apply(thing);
+            }
             
             @Override public <V> V readGet(Function<T, V> task) {
                 return get(r, task);
