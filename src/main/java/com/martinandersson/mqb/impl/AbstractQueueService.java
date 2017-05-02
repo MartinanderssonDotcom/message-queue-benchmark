@@ -5,6 +5,7 @@ import com.martinandersson.mqb.api.QueueService;
 import java.util.Iterator;
 import static java.util.Objects.requireNonNull;
 import java.util.Queue;
+import java.util.function.Function;
 
 /**
  * Skeleton queue service implementation built on top of a {@code Map} that map
@@ -21,6 +22,20 @@ import java.util.Queue;
  */
 public abstract class AbstractQueueService<M extends AbstractMessage> implements QueueService
 {
+    /**
+     * With lazy eviction disabled (false), each completion of a message will
+     * eagerly remove him from the queue and attempt to remove empty queues.<p>
+     * 
+     * If lazy eviction is enabled, then a message marked completed has no
+     * effect on the map and queue. Instead, reader threads during message
+     * iteration will delete completed messages.<p>
+     * 
+     * Do note that turning off lazy eviction will change delivery semantics of
+     * Reentrant from exactly-once to at-least-once since Reentrant currently
+     * use PojoMessage and this class - if eviction is eager - will cause reader
+     * threads to grab messages concurrently. See implementation and source code
+     * comments in pull().
+     */
     private static final boolean LAZY_EVICTION = true;
     
     private final Configuration<M>.Read c;
@@ -38,11 +53,69 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
     
     
     
-    private final ThreadLocal<Boolean> pushed
-            = ThreadLocal.withInitial(() -> false);
-    
     /**
-     * {@inheritDoc}
+     * {@inheritDoc}<p>
+     * 
+     * This implementation make the assumption that the remapping function
+     * passed to {@code Map.compute()} is only called once.
+     * 
+     * @implNote
+     * This implementation will first create a new instance of the message
+     * container.<p>
+     * 
+     * The implementation will then use a map-write access to call
+     * {@code Map.compute()}, providing a remapping function that add the
+     * message to a preexisting queue or if the queue does not exist, a new
+     * queue that will be created inside the remapping function. If the
+     * remapping function add to a preexisting queue, then this queue will be
+     * write-accessed. Access to a queue that the remapping function created
+     * will completely bypass the lock mechanism.<p>
+     * 
+     * Each call to this method ask for a write-access of the underlying map.
+     * It is expected that most calls gets routed to a queue that already
+     * exists. Under this scenario, if it is true that two read operations on
+     * the map is faster than one write, then one could optimize this method
+     * implementation by using a write access to the map only if the queue
+     * didn't exist.<p>
+     * 
+     * In code, we could accomplish this in two steps. 1) Take the current
+     * implementation of {@code push0()} and move it to another method: {@code
+     * writePush()}. 2) Rewrite {@code push0()} to something like the following:
+     * <pre>{@code
+     *     Lockable<Queue<M>> lq = c.map().readGet(map -> map.get(message.queue()));
+     * 
+     *     if (lq == null) {
+     *         writePush(message);
+     *         return;
+     *     }
+     * 
+     *     lq.write(q -> q.add(message));
+     * 
+     *     if (lq != c.map().readGet(map -> map.get(message.queue()))) {
+     *         // Queue instance is no longer in the map, someone removed or replaced him.
+     *         writePush(message);
+     *     }
+     * }</pre>
+     * 
+     * That is exactly what this author did. However, even before reaching
+     * benchmarking, {@code AbstractQueueTest.test_at_least_once()} showed that
+     * {@code ReentrantReadWriteLock} suffered greatly. This concurrency test
+     * went from taking about 5-6 seconds (which is about the same for all
+     * implementations, although sometimes Reentrant take much longer) to
+     * several minutes. Turning off lazy eviction reduced this time cost to
+     * about 20-22 seconds. But still, the punishment was severe and it is a
+     * hint that {@code ReentrantReadWriteLock}s read locks are underperforming
+     * significantly.<p>
+     * 
+     * Since I want the framework (this class) to be comparable across
+     * all implementations without producing skewed results for just one of
+     * the implementations, I had to rollback the change. This goes to show that
+     * in real life, a final solution might need to be tailored for the
+     * thread-safety mechanism in place. It also shows that these mechanisms are
+     * not as exchangeable with each other as we might first think.<p>
+     * 
+     * TODO: Investigate. Also seems like lazy eviction on/off affect Reentrant
+     * greatly with the optimization in place.
      */
     @Override
     public final void push(String queue, String message) {
@@ -50,34 +123,28 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
     }
     
     private void push0(M message) {
+        boolean[] pushed = {false};
+        
         c.map().write(map -> {
-            try {
-                map.compute(message.queue(), (key, old) -> {
-                    // ThreadLocal, local AtomicBoolean, local boolean[], which hack is least ugly?
-                    if (pushed.get()) {
-                        return old;
-                    }
-                    
-                    Lockable<Queue<M>> lq = old != null ? old :
-                            c.queueFactory().get();
-                    
-                    // TOOD: .compute() might be broken, plus we need no lock at
-                    // all if we just created the queue. Maybe save ref to queue
-                    // we added to? In identity based Set. But then that would
-                    // be a totally unnecessary operation for non-concurrent
-                    // maps.
-                    
-                    lq.write(q -> {
-                        q.add(message);
-                        pushed.set(true);
-                    });
-                    
-                    return lq;
-                });
-            }
-            finally {
-                pushed.set(false);
-            }
+            map.compute(message.queue(), (key, old) -> {
+                final Lockable<Queue<M>> lq;
+                
+                if (pushed[0]) {
+                    throw new AssertionError("Remapping function called twice.");
+                }
+                
+                if (old != null) {
+                    old.write(q -> q.add(message));
+                    lq = old;
+                }
+                else {
+                    lq = c.queueFactory().get();
+                    lq.unsafe(q -> q.add(message));
+                }
+                
+                pushed[0] = true;
+                return lq;
+            });
         });
     }
     
@@ -97,8 +164,14 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
                 return null;
             }
             
-            // Must write-lock since we remove completed messages.
-            return lq.writeGet(q -> {
+            // Next we need to grab the message. We write-access the queue if lazy
+            // eviction is turned on because then, if we see a completed message
+            // we remove also it. If lazy eviction is turned off, then is the job
+            // of complete() to remove the queue eagerly and in this method call,
+            // we ignore completed messages and may therefore resort to a
+            // read-access of the queue.
+            
+            Function<Queue<M>, Message> grabber = q -> {
                 Iterator<M> it = q.iterator();
                 
                 M msg = null;
@@ -110,7 +183,9 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
                     
                     switch (impl.tryGrab(c.timeout())) {
                         case COMPLETED:
-                            it.remove();
+                            if (LAZY_EVICTION) {
+                                it.remove();
+                            }
                         case ACTIVE:
                             // Try next message..
                             break;
@@ -123,7 +198,11 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
                 }
                 
                 return msg;
-            });
+            };
+            
+            return LAZY_EVICTION ?
+                    lq.writeGet(grabber) :
+                    lq.readGet(grabber);
         });
         
         if (empty[0]) {
@@ -148,10 +227,7 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
         impl.complete();
         
         if (!LAZY_EVICTION) {
-            // Can not lock for reading first. Although we require re-entrancy,
-            // there is no gaurantee a read lock can be upgraded to a write lock.
-            // In fact, ReentrantReadWriteLock can not.
-            
+            // Must write-access. Read lock can not be upgraded to a write lock.
             c.map().write(m -> {
                 Lockable<Queue<M>> lq = m.get(impl.queue());
                 
