@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * {@link Message} with atomic timestamps.<p>
  * 
- * TODO: Describe.
+ * TODO: Describe and rename to AtomicMessage.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
