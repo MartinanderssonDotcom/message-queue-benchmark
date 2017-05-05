@@ -72,7 +72,7 @@ task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     main = 'com.martinandersson.mqb.benchmark.StartJmh';
     
     // Move expected Gradle properties to System properties for the JVM that boot the benchmark:
-    ['r', 'tg', 'lf', 'rf'].each { p ->
+    ['r', 'tg', 'lf', 'rf', 'q'].each { p ->
         def arg = project.findProperty(p) ?: System.properties[p]
         
         if (arg) {

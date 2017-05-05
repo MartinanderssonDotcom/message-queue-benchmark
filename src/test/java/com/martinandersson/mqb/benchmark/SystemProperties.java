@@ -2,6 +2,7 @@ package com.martinandersson.mqb.benchmark;
 
 import java.text.MessageFormat;
 import static java.util.Objects.requireNonNull;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 
 /**
@@ -166,7 +167,15 @@ public enum SystemProperties
      *   https://bugs.openjdk.java.net/browse/CODETOOLS-7901012
      * </a>
      */
-    THREAD_GROUPS ("tg", "thread groups");
+    THREAD_GROUPS ("tg", "thread groups"),
+    
+    /**
+     * Benchmark parameter "queue size" for {@code QueueServiceBenchmark}.<p>
+     * 
+     * The property key is "q" and the property is required when running {@code
+     * QueueServiceBenchmark}
+     */
+    QUEUE_SIZE ("q", "queue size");
     
     
     
@@ -190,6 +199,17 @@ public enum SystemProperties
      */
     public String get() {
         return System.getProperty(prop);
+    }
+    
+    /**
+     * Returns the value of this system property as an integer.
+     * 
+     * @return the value of this system property as an integer
+     */
+    public OptionalInt getInt() {
+        return get() == null ?
+                OptionalInt.empty() :
+                OptionalInt.of(Integer.parseInt(get()));
     }
     
     /**
