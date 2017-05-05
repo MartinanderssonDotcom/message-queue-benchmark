@@ -64,12 +64,14 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
      * container.<p>
      * 
      * The implementation will then use a map-write access to call
-     * {@code Map.compute()}, providing a remapping function that add the
+     * {@code Map.compute()}, providing a remapping function that push the
      * message to a preexisting queue or if the queue does not exist, a new
-     * queue that will be created inside the remapping function. If the
-     * remapping function add to a preexisting queue, then this queue will be
-     * write-accessed. Access to a queue that the remapping function created
-     * will completely bypass the lock mechanism.<p>
+     * queue that is created inside the remapping function.<p>
+     * 
+     * If the remapping function push to a preexisting queue, then this queue
+     * will be write-accessed. Access to a queue that the remapping function
+     * created will bypass any locking in place as the queue instance is not yet
+     * visible to other threads.<p>
      * 
      * Each call to this method ask for a write-access of the underlying map.
      * It is expected that most calls gets routed to a queue that already
@@ -150,6 +152,18 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
     
     /**
      * {@inheritDoc}
+     * 
+     * @implNote
+     * In the first step of this implementation, the map is read-accessed to get
+     * hold of the queue. If the queue exist, it is read-accessed to iterate
+     * through messages starting at the head. Each message is attempted to be
+     * marked as grabbed by calling {@code AbstractMessage.tryGrab()}. First
+     * such call that succeeds brake the iteration.<p>
+     * 
+     * In the second step, if the implementation has a strong reason to believe
+     * the queue is empty, then an attempt to remove the queue from the map will
+     * be performed. This entails one write-access of the map and if the queue
+     * is still present, it will be confirmed empty by using a read-access.
      */
     @Override
     public final Message pull(String queue) {
@@ -213,7 +227,11 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
     }
     
     /**
-     * {@inheritDoc}
+     * {@inheritDoc}<p>
+     * 
+     * @implNote
+     * The only thing this method does is to mark the message as completed by
+     * calling {@code AbstractMessage.complete()}.
      */
     @Override
     public final void complete(Message message) {
