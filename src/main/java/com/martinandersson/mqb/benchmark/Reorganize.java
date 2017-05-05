@@ -11,9 +11,15 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import static java.util.Arrays.stream;
+import java.util.Collection;
 import java.util.Comparator;
+import static java.util.Comparator.comparing;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.minBy;
 
 /**
  * Reorganize a JMH results file and write to a new file specified with property
@@ -25,9 +31,10 @@ import static java.util.stream.Collectors.joining;
  * results by hand in a text editor. You should probably not use it for anything
  * else?<p>
  * 
- * What it does is to sort throughput summary records in the result file by
+ * What it does is to sort throughput summary records from the result file by
  * queue size, benchmark name and descending scores. Also we'll slap on a cute
- * column to show the percentage gain comparing each row to the trailing loser.
+ * column to show percentage gains comparing each row to 1) the trailing loser
+ * and 2) the bottom looser.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
@@ -36,20 +43,25 @@ public class Reorganize
     private static final String
             FILE        = System.getProperty("rf"),
             BENCHMARK   = "Benchmark",
+            MODE        = "Mode",
             SCORE       = "Score",
             SCORE_ERROR = "Score Error (99.9%)",
             UNIT        = "Unit",
-            P_IMPL      = "Param: impl",
-            P_QUEUES    = "Param: queues";
+            IMPL        = "Param: impl";
     
     private static final String[] KEEP_ORDERLY = {
-            BENCHMARK, P_IMPL, P_QUEUES, SCORE, SCORE_ERROR, UNIT };
+            BENCHMARK, IMPL, SCORE, SCORE_ERROR, UNIT };
     
     
     
     public static void main(String... ignored) throws IOException {
+        writeToFile(reorganize(readRows()));
+    }
+    
+    private static List<Row> readRows() throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(FILE));
-        List<Row>    data  = new ArrayList<>();
+        
+        final List<Row> rows = new ArrayList<>();
         
         Row header = null;
         
@@ -60,28 +72,38 @@ public class Reorganize
             else {
                 Row r = Row.data(header, l);
                 
+                // Only interested in throughput
                 // Not interested in gotMessage- and gotNull subresults
-                if (!r.value(BENCHMARK).matches(".*\\b(gotMessage|gotNull)\\b.*")) {
-                    data.add(Row.data(header, l));
+                if (r.value(MODE).equals("thrpt") &&
+                    !r.value(BENCHMARK).matches(".*\\b(gotMessage|gotNull)\\b.*"))
+                {
+                    rows.add(Row.data(header, l));
                 }
             }
         }
         
-        data.sort(Comparator.<Row, String>comparing(r ->
-                r.value(P_QUEUES)).thenComparing(r ->
+        rows.sort(Comparator.<Row, String>comparing(r ->
                 r.value(BENCHMARK)).thenComparing(Comparator.<Row, Double>comparing(r ->
                 parseScore(r)).reversed()));
         
+        return rows;
+    }
+    
+    private static List<String> reorganize(List<Row> rows) {
+        final List<String> out = new ArrayList<>();
         
-        List<String> out = new ArrayList<>();
+        // Add header and toss on extra gain columns.
+        out.add(stream(KEEP_ORDERLY).collect(joining(Row.DELIMITER))
+                + Row.DELIMITER + "Rel. Gain" + Row.DELIMITER + "Acc. Gain");
         
-        // Add header and toss on an extra Gain column.
-        out.add(stream(KEEP_ORDERLY).collect(joining(Row.DELIMITER)) + Row.DELIMITER + "Gain");
+        Map<String, Optional<Row>> loosers = rows.stream().collect(
+                groupingBy(r -> r.value(BENCHMARK),
+                minBy(comparing(r -> parseScore(r)))));
         
-        for (int i = 0; i < data.size(); ++i) {
-            Row row = data.get(i);
+        for (int i = 0; i < rows.size(); ++i) {
+            final Row $this = rows.get(i);
             
-            String o = row.mkString(
+            String o = $this.mkString(
                     // Keep all labels/columns as defined in KEEP_ORDERLY (discard the others).
                     lbl -> pos(lbl) != -1,
                     // Order them according to position in KEEP_ORDERLY.
@@ -91,14 +113,14 @@ public class Reorganize
                         String replace = val;
                         
                         if (lbl.equals(BENCHMARK)) {
-                            switch (val.replaceFirst("com.martinandersson.mqb.benchmark.QueueServiceBenchmark.", "")) {
-                                case "thrpt":
+                            switch (val.replaceFirst("com.martinandersson.mqb.benchmark.QueueServiceBenchmark.Thrpt.", "")) {
+                                case "":
                                     replace = "Total";
                                     break;
-                                case "thrpt:reader_thrpt":
+                                case ":reader":
                                     replace = "Reader";
                                     break;
-                                case "thrpt:writer_thrpt":
+                                case ":writer":
                                     replace = "Writer";
                                     break;
                             }
@@ -106,22 +128,28 @@ public class Reorganize
                         return replace;
                     });
             
-            // Add percentage gain if applicable (there's a row below in same
-            // benchmark- and queue category).
-            if (i < data.size() - 1) {
-                Row next = data.get(i + 1);
+            // Add relative percentage gain if applicable (= there's a row below in same benchmark).
+            // Add accumulative percentage gain if applicable (= the looser is not this row)
+            if (i < rows.size() - 1) {
+                Row next = rows.get(i + 1);
                 
-                if (next.value(BENCHMARK).equals(row.value(BENCHMARK)) &&
-                    next.value(P_QUEUES).equals(row.value(P_QUEUES)))
-                {
-                    o += Row.DELIMITER + diff(next, row);
+                if (next.value(BENCHMARK).equals($this.value(BENCHMARK))) {
+                    o += Row.DELIMITER + diff(next, $this);
+                }
+                
+                Row looser;
+                if ((looser = loosers.get($this.value(BENCHMARK)).get()) != $this) {
+                    o += Row.DELIMITER + diff(looser, $this);
                 }
             }
             
             out.add(o);
         }
         
-        
+        return out;
+    }
+    
+    private static void writeToFile(Collection<? extends CharSequence> lines) throws IOException {
         // Dump to new file tagged "_reorg"..
         
         final int dot = FILE.lastIndexOf('.');
@@ -133,10 +161,10 @@ public class Reorganize
         
         Path file = Paths.get(FILE).resolveSibling(outFile + ext);
         
-        Files.write(file, out);
+        Files.write(file, lines);
         
         System.out.printf("Dumped %s reorganized record(s) to  >  %s%n",
-                out.size() - 1, file.toAbsolutePath());
+                lines.size() - 1, file.toAbsolutePath());
     }
     
     private static int pos(String label) {

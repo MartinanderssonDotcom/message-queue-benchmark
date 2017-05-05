@@ -40,11 +40,14 @@ import org.openjdk.jmh.infra.ThreadParams;
  * All benchmark methods herein are "asymmetric" with one workload for reader
  * threads and one workload for writer threads. Number of readers/writers are
  * specified using a system property "tg". For example, "1-2" will yield 1 reader
- * thread and 1 writer thread.
+ * thread and 1 writer thread.<p>
+ * 
+ * We also need to know the queue size. Use system property "q" to specify that.
  * 
  * @author Martin Anderson (webmaster at martinandersson.com)
  * 
  * @see SystemProperties#THREAD_GROUPS
+ * @see SystemProperties#QUEUE_SIZE
  */
 // TODO: Production values!
 @Fork(1)
@@ -57,7 +60,7 @@ public class QueueServiceBenchmark
     // Iteration- and batch sizes for single shot benchmarks.
     // -----
     
-    private static final int SS_ITERATIONS = 50, // TODO: 100
+    private static final int SS_ITERATIONS = 100,
                              SS_BATCH_SIZE = 100_000;
     
     
@@ -67,7 +70,6 @@ public class QueueServiceBenchmark
     
     QueueService qs;
     
-    @Param({"1", "100", "1000"})
     int queues;
     
     
@@ -123,6 +125,9 @@ public class QueueServiceBenchmark
     
     @Setup
     public void setupTrial(BenchmarkParams bParams, ThreadParams tParams) {
+        queues = SystemProperties.QUEUE_SIZE.getInt().orElseThrow(
+                () -> new IllegalArgumentException("Please specify a queue size."));
+        
         if (!SystemProperties.LOG_FILE.isPresent()) {
             return;
         }
@@ -131,20 +136,18 @@ public class QueueServiceBenchmark
         // so be kind and dump benchmark details.
         
         out.println();
-        out.println("Running " + bParams.getBenchmark());
-        out.println("        " + bParams.generatedBenchmark());
-
+        out.println(    "Running " + bParams.getBenchmark());
         String params = "        Implementation " + impl + ", " + queues + " queue(s)";
-
-        int[] threads = bParams.getThreadGroups();
-
-        if (threads.length != 2) {
+        
+        int[] groups = bParams.getThreadGroups();
+        
+        if (groups.length != 2) {
             throw new IllegalArgumentException("Bad \"thread group\" parameter: " +
-                    IntStream.of(threads).mapToObj(Integer::toString).collect(joining(",", "[", "]")));
+                    IntStream.of(groups).mapToObj(Integer::toString).collect(joining(",", "[", "]")));
         }
-
-        params += ", " + threads[0] + " reader(s) and " + threads[1] + " writer(s) in " + tParams.getGroupCount() + " group(s)";
-
+        
+        params += ", " + groups[0] + " reader(s) and " + groups[1] + " writer(s) in " + tParams.getGroupCount() + " group(s)";
+        
         out.println(params);
     }
     
@@ -167,7 +170,7 @@ public class QueueServiceBenchmark
             int[] seq = shuffle(IntStream.rangeClosed(1, state.queues).toArray());
             
             name = new FixedCostLoopingIterator<>(
-                    stream(seq).mapToObj(x -> "Q" + x));
+                    stream(seq).mapToObj(n -> "Q" + n));
         }
         
         private static int[] shuffle(int[] arr) {
@@ -202,45 +205,49 @@ public class QueueServiceBenchmark
     // Benchmarks
     // -----
     
-    @Group("thrpt")
-    @Benchmark
-    public void writer_thrpt(QueueName queue, QueueMessage message) {
-        write(queue.get(), message.msg);
+    @BenchmarkMode(Mode.Throughput)
+    public static class Thrpt extends QueueServiceBenchmark {
+        @Group("")
+        @Benchmark
+        public void writer(QueueName queue, QueueMessage message) {
+            write(queue.get(), message.msg);
+        }
+        
+        @Group("")
+        @Benchmark
+        public Message reader(QueueName queue, ReadStatistics rs) {
+            return read(queue.get(), rs);
+        }
     }
     
-    @Group("thrpt")
-    @Benchmark
-    public Message reader_thrpt(QueueName queue, ReadStatistics rs) {
-        return read(queue.get(), rs);
-    }
-    
-    @Group("avg")
-    @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void writer_avg(QueueName queue, QueueMessage message) {
-        write(queue.get(), message.msg);
+    public static class Avg extends QueueServiceBenchmark {
+        @Group("")
+        @Benchmark
+        public void writer(QueueName queue, QueueMessage message) {
+            write(queue.get(), message.msg);
+        }
+        
+        @Group("")
+        @Benchmark
+        public Message reader(QueueName queue, ReadStatistics rs) {
+            return read(queue.get(), rs);
+        }
     }
     
-    @Group("avg")
-    @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
-    public Message reader_avg(QueueName queue, ReadStatistics rs) {
-        return read(queue.get(), rs);
-    }
-    
-    @Group("ss")
-    @Benchmark
     @BenchmarkMode(Mode.SingleShotTime)
     @Measurement(iterations = SS_ITERATIONS, batchSize = SS_BATCH_SIZE)
-    public void writer_ss(QueueName queue, QueueMessage message) {
-        write(queue.get(), message.msg);
-    }
-    
-    @Group("ss")
-    @Benchmark
-    @BenchmarkMode(Mode.SingleShotTime)
-    @Measurement(iterations = SS_ITERATIONS, batchSize = SS_BATCH_SIZE)
-    public Message reader_ss(QueueName queue) {
-        return read(queue.get());
+    public static class SingleShot extends QueueServiceBenchmark {
+        @Group("")
+        @Benchmark
+        public void writer(QueueName queue, QueueMessage message) {
+            write(queue.get(), message.msg);
+        }
+        
+        @Group("")
+        @Benchmark
+        public Message reader(QueueName queue) {
+            return read(queue.get());
+        }
     }
 }
