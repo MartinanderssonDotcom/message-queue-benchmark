@@ -10,10 +10,10 @@ import java.util.function.Function;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class SynchronizedQueueServiceTest extends AbstractQueueTest
+public class SynchronizedQSTest extends AbstractQueueTest
 {
     @Override
     protected final Function<Duration, QueueService> getFactory() {
-        return SynchronizedQueueService::new;
+        return SynchronizedQS::new;
     }
 }

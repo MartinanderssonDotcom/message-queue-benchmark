@@ -14,9 +14,9 @@ import java.util.HashMap;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class SynchronizedQueueService extends AbstractQS<PojoMessage>
+public class SynchronizedQS extends AbstractQS<PojoMessage>
 {
-    public SynchronizedQueueService(Duration timeout) {
+    public SynchronizedQS(Duration timeout) {
         super(message(PojoMessage::new).
               timeout(timeout).
               map(mutex(new HashMap<>())).

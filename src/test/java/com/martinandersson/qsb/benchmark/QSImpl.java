@@ -4,7 +4,7 @@ import com.martinandersson.qsb.api.QueueService;
 import com.martinandersson.qsb.impl.concurrent.ConcurrentQSWithPojoMessage;
 import com.martinandersson.qsb.impl.concurrent.atomic.ConcurrentQSWithAtomicMessage;
 import com.martinandersson.qsb.impl.readwritelock.ReadWriteLockedQS;
-import com.martinandersson.qsb.impl.serialized.SynchronizedQueueService;
+import com.martinandersson.qsb.impl.serialized.SynchronizedQS;
 import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -16,7 +16,7 @@ import java.util.function.Supplier;
  */
 public enum QSImpl implements Supplier<QueueService>
 {
-    Synchronized     (SynchronizedQueueService::new),
+    Synchronized     (SynchronizedQS::new),
     ReadWriteLock    (ReadWriteLockedQS::new),
     ConcurrentPojo   (ConcurrentQSWithPojoMessage::new),
     ConcurrentAtomic (ConcurrentQSWithAtomicMessage::new);
