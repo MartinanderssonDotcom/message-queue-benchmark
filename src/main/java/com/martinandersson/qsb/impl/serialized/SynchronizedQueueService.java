@@ -1,6 +1,6 @@
 package com.martinandersson.qsb.impl.serialized;
 
-import com.martinandersson.qsb.impl.AbstractQueueService;
+import com.martinandersson.qsb.impl.AbstractQS;
 import static com.martinandersson.qsb.impl.Configuration.message;
 import static com.martinandersson.qsb.impl.Lockable.mutex;
 import static com.martinandersson.qsb.impl.Lockable.noLock;
@@ -14,7 +14,7 @@ import java.util.HashMap;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class SynchronizedQueueService extends AbstractQueueService<PojoMessage>
+public class SynchronizedQueueService extends AbstractQS<PojoMessage>
 {
     public SynchronizedQueueService(Duration timeout) {
         super(message(PojoMessage::new).

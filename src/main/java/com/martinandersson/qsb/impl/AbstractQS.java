@@ -20,7 +20,7 @@ import java.util.function.Function;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public abstract class AbstractQueueService<M extends AbstractMessage> implements QueueService
+public abstract class AbstractQS<M extends AbstractMessage> implements QueueService
 {
     /**
      * With lazy eviction disabled (false), each completion of a message will
@@ -43,11 +43,11 @@ public abstract class AbstractQueueService<M extends AbstractMessage> implements
     
     
     /**
-     * Constructs a {@code AbstractQueueService}.
+     * Constructs a {@code AbstractQS}.
      * 
      * @param config  configuration object
      */
-    public AbstractQueueService(Configuration<M> config) {
+    public AbstractQS(Configuration<M> config) {
         c = config.read();
     }
     

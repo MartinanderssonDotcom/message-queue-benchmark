@@ -8,7 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * Configures {@link AbstractQueueService}.<p>
+ * Configures {@link AbstractQS}.<p>
  * 
  * Configurations can be overridden many times, until someone {@linkplain
  * #read() reads} the configuration.
@@ -76,7 +76,7 @@ public class Configuration<M>
      * 
      * @return this, for chaining
      * 
-     * @see AbstractQueueService
+     * @see AbstractQS
      */
     public Configuration<M> map(Lockable<Map<String, Lockable<Queue<M>>>> map) {
         requireNotBuilt();
@@ -90,7 +90,7 @@ public class Configuration<M>
      * 
      * @return this, for chaining
      * 
-     * @see AbstractQueueService
+     * @see AbstractQS
      */
     public Configuration<M> queue(Supplier<Lockable<Queue<M>>> factory) {
         requireNotBuilt();
@@ -130,7 +130,7 @@ public class Configuration<M>
             return timeout;
         }
         
-        /** @see AbstractQueueService  */
+        /** @see AbstractQS  */
         Lockable<Map<String, Lockable<Queue<M>>>> map() {
             return map;
         }
@@ -139,7 +139,7 @@ public class Configuration<M>
             return messageFactory;
         }
         
-        /** @see AbstractQueueService  */
+        /** @see AbstractQS  */
         Supplier<Lockable<Queue<M>>> queueFactory() {
             return queueFactory;
         }

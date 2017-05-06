@@ -1,6 +1,6 @@
 package com.martinandersson.qsb.impl.concurrent.stamped;
 
-import com.martinandersson.qsb.impl.AbstractQueueService;
+import com.martinandersson.qsb.impl.AbstractQS;
 import static com.martinandersson.qsb.impl.Lockable.noLock;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,7 +15,7 @@ import static com.martinandersson.qsb.impl.Configuration.message;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ConcurrentQSWithStampedMessage extends AbstractQueueService<StampedMessage>
+public class ConcurrentQSWithStampedMessage extends AbstractQS<StampedMessage>
 {
     public ConcurrentQSWithStampedMessage(Duration timeout) {
         super(message(StampedMessage::new).

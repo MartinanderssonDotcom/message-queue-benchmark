@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
  * Loads of unit tests for any {@code QueueService} implementation.<p>
  * 
  * TODO: Rename to AbstractQueueServiceTest. Also find references to the old
- * name, there is one in JavaDoc of {@code AbstractQueueService.push()}.
+ * name, there is one in JavaDoc of {@code AbstractQS.push()}.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */

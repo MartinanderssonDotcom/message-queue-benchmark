@@ -1,6 +1,6 @@
 package com.martinandersson.qsb.impl.concurrent;
 
-import com.martinandersson.qsb.impl.AbstractQueueService;
+import com.martinandersson.qsb.impl.AbstractQS;
 import static com.martinandersson.qsb.impl.Lockable.noLock;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +16,7 @@ import com.martinandersson.qsb.impl.PojoMessage;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ConcurrentQSWithPojoMessage extends AbstractQueueService<PojoMessage>
+public class ConcurrentQSWithPojoMessage extends AbstractQS<PojoMessage>
 {
     public ConcurrentQSWithPojoMessage(Duration timeout) {
         super(message(PojoMessage::new).

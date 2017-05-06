@@ -1,6 +1,6 @@
 /**
- * {@link com.martinandersson.qsb.impl.AbstractQueueService} provide a framework
- * for all concrete queue services.<p>
+ * {@link com.martinandersson.qsb.impl.AbstractQS} provide a framework for all
+ * concrete queue services.<p>
  * 
  * A structure is imposed, but does not make assumptions about synchronization
  * strategy.
