@@ -38,7 +38,6 @@ import org.openjdk.jmh.infra.ThreadParams;
  * @see SystemProperties#THREAD_GROUPS
  * @see SystemProperties#QUEUE_SIZE
  */
-// TODO: Production values!
 @Fork(10)
 @Warmup(iterations = 20)
 @Measurement(iterations = 20, time = 1)
