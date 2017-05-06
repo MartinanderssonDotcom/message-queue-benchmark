@@ -55,7 +55,7 @@ task run(type: JavaExec, dependsOn: compileJava) {
 
 task reorganize(type: JavaExec, dependsOn: compileJava) {
     description 'Execute Reorganize class, please specify JMH:s result file like so "-Prf=my_result.txt".'
-    main = 'com.martinandersson.mqb.benchmark.Reorganize';
+    main = 'com.martinandersson.qsb.benchmark.Reorganize';
     
     def rf = project.findProperty('rf') ?: System.properties['rf']
     
@@ -69,7 +69,7 @@ task reorganize(type: JavaExec, dependsOn: compileJava) {
 task bench(type: JavaExec, dependsOn: [classes, testClasses]) {
     description = 'Run benchmarks. See the README.md file.'
     classpath = sourceSets.test.runtimeClasspath
-    main = 'com.martinandersson.mqb.benchmark.StartJmh';
+    main = 'com.martinandersson.qsb.benchmark.StartJmh';
     
     // Move expected Gradle properties to System properties for the JVM that boot the benchmark:
     ['r', 'tg', 'lf', 'rf', 'q'].each { p ->
