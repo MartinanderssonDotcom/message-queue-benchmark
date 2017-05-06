@@ -1,4 +1,4 @@
-package com.martinandersson.qsb.impl.reentrantreadwritelock;
+package com.martinandersson.qsb.impl.readwritelock;
 
 import com.martinandersson.qsb.impl.AbstractQS;
 import static com.martinandersson.qsb.impl.Configuration.message;
@@ -14,14 +14,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ReentrantReadWriteLockedQueueService extends AbstractQS<PojoMessage>
+public class ReadWriteLockedQS extends AbstractQS<PojoMessage>
 {
     /**
-     * Constructs a {@code ReentrantReadWriteLockedQueueService}.
+     * Constructs a {@code ReadWriteLockedQS}.
      * 
      * @param timeout  message timeout
      */
-    public ReentrantReadWriteLockedQueueService(Duration timeout) {
+    public ReadWriteLockedQS(Duration timeout) {
         super(message(PojoMessage::new).
               timeout(timeout).
               map(readWrite(new HashMap<>(), new ReentrantReadWriteLock())).

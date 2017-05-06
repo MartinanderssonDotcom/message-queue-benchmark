@@ -31,10 +31,10 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * iteration will delete completed messages.<p>
      * 
      * Do note that turning off lazy eviction will change delivery semantics of
-     * Reentrant from exactly-once to at-least-once since Reentrant currently
-     * use PojoMessage and this class - if eviction is eager - will cause reader
-     * threads to grab messages concurrently. See implementation and source code
-     * comments in pull().
+     * {@code ReadWriteLockedQS} from exactly-once to at-least-once since
+     * ReadWriteLockedQS currently use PojoMessage and this class - if eviction
+     * is eager - will cause reader threads to grab messages concurrently. See
+     * implementation and source code comments in pull().
      */
     private static final boolean LAZY_EVICTION = true;
     
@@ -101,10 +101,10 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * 
      * That is exactly what this author did. However, even before reaching
      * benchmarking, {@code AbstractQueueTest.test_at_least_once()} showed that
-     * {@code ReentrantReadWriteLock} suffered greatly. This concurrency test
-     * went from taking about 5-6 seconds (which is about the same for all
-     * implementations, although sometimes Reentrant take much longer) to
-     * several minutes. Turning off lazy eviction reduced this time cost to
+     * {@code ReadWriteLockedQS} suffered greatly. This concurrency test went
+     * from taking about 5-6 seconds (which is about the same for all
+     * implementations, although sometimes ReadWriteLockedQS take much longer)
+     * to several minutes. Turning off lazy eviction reduced this time cost to
      * about 20-22 seconds. But still, the punishment was severe and it is a
      * hint that {@code ReentrantReadWriteLock}s read locks are underperforming
      * significantly.<p>
@@ -116,8 +116,8 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * thread-safety mechanism in place. It also shows that these mechanisms are
      * not as exchangeable with each other as we might first think.<p>
      * 
-     * TODO: Investigate. Also seems like lazy eviction on/off affect Reentrant
-     * greatly with the optimization in place.
+     * TODO: Investigate. Also seems like lazy eviction on/off affect
+     * ReadWriteLockedQS greatly with the optimization in place.
      */
     @Override
     public final void push(String queue, String message) {
