@@ -34,7 +34,7 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * {@code ReadWriteLockedQS} from exactly-once to at-least-once since
      * ReadWriteLockedQS currently use PojoMessage and this class - if eviction
      * is eager - will cause reader threads to grab messages concurrently. See
-     * implementation and source code comments in pull().
+     * implementation and source code comments in poll().
      */
     private static final boolean LAZY_EVICTION = true;
     
@@ -166,7 +166,7 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * is still present, it will be confirmed empty by using a read-access.
      */
     @Override
-    public final Message pull(String queue) {
+    public final Message poll(String queue) {
         boolean[] empty = {true};
         
         final Message v = c.map().readGet(m -> {

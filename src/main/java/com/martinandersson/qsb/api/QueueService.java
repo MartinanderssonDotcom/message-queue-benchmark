@@ -71,7 +71,7 @@ public interface QueueService
     }
     
     /**
-     * Pull head of specified {@code queue}.<p>
+     * Poll head of specified {@code queue}.<p>
      * 
      * TODO: Rename to poll()??
      * 
@@ -79,7 +79,7 @@ public interface QueueService
      * 
      * @return a message, or {@code null} if the queue is empty
      */
-    Message pull(String queue);
+    Message poll(String queue);
     
     /**
      * Complete specified {@code message}.<p>

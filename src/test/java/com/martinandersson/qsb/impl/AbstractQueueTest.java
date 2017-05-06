@@ -55,16 +55,16 @@ public abstract class AbstractQueueTest
     
     
     
-    public void test_one_push_pull_remove() {
+    public void test_one_push_poll_remove() {
         testee.push("hello", "world");
         
-        Message msg = testee.pull("hello");
+        Message msg = testee.poll("hello");
         
         assertEquals(msg.queue(), "hello");
         assertEquals(msg.get(), "world");
         
         // No more stuff in the queue.
-        assertNull(testee.pull("hello"));
+        assertNull(testee.poll("hello"));
         
         // We only try to survive here. Could add some more checks below (no
         // weird side-effects like adding a message et cetera).
@@ -93,7 +93,7 @@ public abstract class AbstractQueueTest
     
     public void test_remove_singleton() {
         testee.push("remove", "me!");
-        testee.complete(testee.pull("remove"));
+        testee.complete(testee.poll("remove"));
         
         // Assert queue is empty:
         assert_queue_content("remove");
@@ -101,15 +101,15 @@ public abstract class AbstractQueueTest
     
     public void test_remove_first() {
         testee.push("q", "m1", "m2");
-        testee.complete(testee.pull("q"));
+        testee.complete(testee.poll("q"));
         
         assert_queue_content("q", "m2");
     }
     
     public void test_remove_man_in_the_middle() {
         testee.push("q", "m1", "m2", "m3");
-        testee.pull("q");
-        testee.complete(testee.pull("q"));
+        testee.poll("q");
+        testee.complete(testee.poll("q"));
         
         assert_queue_content("q", "m3");
     }
@@ -117,8 +117,8 @@ public abstract class AbstractQueueTest
     public void test_remove_last() throws InterruptedException {
         testee.push("q", "m1", "m2");
         
-        testee.pull("q");
-        testee.complete(testee.pull("q"));
+        testee.poll("q");
+        testee.complete(testee.poll("q"));
         
         assert_queue_content("q");
     }
@@ -129,7 +129,7 @@ public abstract class AbstractQueueTest
         
         testee.push("q", "m");
         
-        assertEquals(testee.pull("q"), testee.pull("q"));
+        assertEquals(testee.poll("q"), testee.poll("q"));
     }
     
     
@@ -143,7 +143,7 @@ public abstract class AbstractQueueTest
     }
     
     /**
-     * Will under very high contention pull tons of messages through testee and
+     * Will under very high contention poll tons of messages through testee and
      * assert that each message was delivered at least once.<p>
      * 
      * Warning! This is a method that may cause you headache. Read at your own
@@ -184,16 +184,16 @@ public abstract class AbstractQueueTest
                 return;
             }
             
-            List<String> myPullOrder = asList(copyOf(queues, queues.length));
-            Collections.shuffle(myPullOrder);
+            List<String> myPollOrder = asList(copyOf(queues, queues.length));
+            Collections.shuffle(myPollOrder);
             
             Message m;
             
             do {
                 m = null;
                 
-                for (String q : myPullOrder) {
-                    Message m0 = testee.pull(q);
+                for (String q : myPollOrder) {
+                    Message m0 = testee.poll(q);
                     
                     if (m0 == null) {
                         continue;
@@ -249,18 +249,18 @@ public abstract class AbstractQueueTest
      * Asserts all specified {@code messages} as the only content of the
      * specified {@code queue}.
      * 
-     * The implementation will do one pull for each specified message and assert
+     * The implementation will do one poll for each specified message and assert
      * equality. Once all messages has been asserted, we also assert that the
      * queue is empty.
      * 
-     * @param queue     queue to pull messages from
+     * @param queue     queue to poll messages from
      * @param messages  messages to assert
      */
     private void assert_queue_content(String queue, String... messages) {
         stream(messages).forEach(expected ->
-                assertEquals(testee.pull(queue).get(), expected));
+                assertEquals(testee.poll(queue).get(), expected));
         
-        assertNull(testee.pull(queue));
+        assertNull(testee.poll(queue));
     }
     
     private static String[] mkStrings(int n, String prefix) {

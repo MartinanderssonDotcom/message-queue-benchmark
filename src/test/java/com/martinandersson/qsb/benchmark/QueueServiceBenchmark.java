@@ -69,7 +69,7 @@ public abstract class QueueServiceBenchmark
     }
     
     protected final Message read(String queue) {
-        final Message m = qs.pull(queue);
+        final Message m = qs.poll(queue);
         
         if (m != null) {
             qs.complete(m);
