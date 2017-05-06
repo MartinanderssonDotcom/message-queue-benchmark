@@ -3,6 +3,7 @@ package com.martinandersson.mqb.impl.serialized;
 import com.martinandersson.mqb.impl.AbstractQueueService;
 import static com.martinandersson.mqb.impl.Configuration.message;
 import static com.martinandersson.mqb.impl.Lockable.mutex;
+import static com.martinandersson.mqb.impl.Lockable.noLock;
 import com.martinandersson.mqb.impl.PojoMessage;
 import java.time.Duration;
 import java.util.ArrayDeque;
@@ -19,6 +20,6 @@ public class SynchronizedQueueService extends AbstractQueueService<PojoMessage>
         super(message(PojoMessage::new).
               timeout(timeout).
               map(mutex(new HashMap<>())).
-              queue(mutex(ArrayDeque::new)));
+              queue(noLock(ArrayDeque::new)));
     }
 }
