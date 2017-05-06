@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-final class StampedMessage extends AbstractMessage
+final class AtomicMessage extends AbstractMessage
 {
     /**
      * Any thread that succeed setting this reference, has also succeeded in
@@ -29,12 +29,12 @@ final class StampedMessage extends AbstractMessage
     
     
     /**
-     * Constructs a {@code StampedMessage}.
+     * Constructs an {@code AtomicMessage}.
      * 
      * @param queue    queue
      * @param content  message content
      */
-    public StampedMessage(String queue, String content) {
+    public AtomicMessage(String queue, String content) {
         super(queue, content);
         this.timestamps = new AtomicReference<>();
     }

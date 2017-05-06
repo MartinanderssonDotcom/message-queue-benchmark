@@ -8,17 +8,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import static com.martinandersson.qsb.impl.Configuration.message;
 
 /**
- * Uses {@code StampedMessage}, {@code ConcurrentHashMap} and {@code
+ * Uses {@code AtomicMessage}, {@code ConcurrentHashMap} and {@code
  * ConcurrentLinkedQueue}.<p>
  * 
  * This queue service has exactly-once delivery semantics (yet, lock-free).
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ConcurrentQSWithStampedMessage extends AbstractQS<StampedMessage>
+public class ConcurrentQSWithStampedMessage extends AbstractQS<AtomicMessage>
 {
     public ConcurrentQSWithStampedMessage(Duration timeout) {
-        super(message(StampedMessage::new).
+        super(message(AtomicMessage::new).
               timeout(timeout).
               map(noLock(new ConcurrentHashMap<>())).
               queue(noLock(ConcurrentLinkedQueue::new)));
