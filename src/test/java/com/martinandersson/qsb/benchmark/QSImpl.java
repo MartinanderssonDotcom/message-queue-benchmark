@@ -16,10 +16,10 @@ import java.util.function.Supplier;
  */
 public enum QSImpl implements Supplier<QueueService>
 {
-    Synchronized           (SynchronizedQueueService::new),
-    ReentrantReadWriteLock (ReentrantReadWriteLockedQueueService::new),
-    ConcurrentPojo         (ConcurrentQSWithPojoMessage::new),
-    ConcurrentStamped      (ConcurrentQSWithAtomicMessage::new);
+    Synchronized     (SynchronizedQueueService::new),
+    ReadWriteLock    (ReentrantReadWriteLockedQueueService::new),
+    ConcurrentPojo   (ConcurrentQSWithPojoMessage::new),
+    ConcurrentAtomic (ConcurrentQSWithAtomicMessage::new);
     
     private static final Duration MSG_TIMEOUT = Duration.ofDays(999);
     
