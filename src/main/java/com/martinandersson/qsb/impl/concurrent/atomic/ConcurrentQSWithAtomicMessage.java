@@ -1,4 +1,4 @@
-package com.martinandersson.qsb.impl.concurrent.stamped;
+package com.martinandersson.qsb.impl.concurrent.atomic;
 
 import com.martinandersson.qsb.impl.AbstractQS;
 import static com.martinandersson.qsb.impl.Lockable.noLock;
@@ -15,9 +15,9 @@ import static com.martinandersson.qsb.impl.Configuration.message;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ConcurrentQSWithStampedMessage extends AbstractQS<AtomicMessage>
+public class ConcurrentQSWithAtomicMessage extends AbstractQS<AtomicMessage>
 {
-    public ConcurrentQSWithStampedMessage(Duration timeout) {
+    public ConcurrentQSWithAtomicMessage(Duration timeout) {
         super(message(AtomicMessage::new).
               timeout(timeout).
               map(noLock(new ConcurrentHashMap<>())).

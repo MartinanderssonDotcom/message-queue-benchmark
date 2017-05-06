@@ -1,4 +1,4 @@
-package com.martinandersson.qsb.impl.concurrent.stamped;
+package com.martinandersson.qsb.impl.concurrent.atomic;
 
 import com.martinandersson.qsb.api.Message;
 import com.martinandersson.qsb.impl.AbstractMessage;

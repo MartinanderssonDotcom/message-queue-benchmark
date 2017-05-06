@@ -1,4 +1,4 @@
-package com.martinandersson.qsb.impl.concurrent.stamped;
+package com.martinandersson.qsb.impl.concurrent.atomic;
 
 import static java.text.MessageFormat.format;
 import java.time.Instant;
