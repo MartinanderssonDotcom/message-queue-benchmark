@@ -71,53 +71,7 @@ public abstract class AbstractQS<M extends AbstractMessage> implements QueueServ
      * If the remapping function push to a preexisting queue, then this queue
      * will be write-accessed. Access to a queue that the remapping function
      * created will bypass any locking in place as the queue instance is not yet
-     * visible to other threads.<p>
-     * 
-     * Each call to this method ask for a write-access of the underlying map.
-     * It is expected that most calls gets routed to a queue that already
-     * exists. Under this scenario, if it is true that two read operations on
-     * the map is faster than one write, then one could optimize this method
-     * implementation by using a write access to the map only if the queue
-     * didn't exist.<p>
-     * 
-     * In code, we could accomplish this in two steps. 1) Take the current
-     * implementation of {@code push0()} and move it to another method: {@code
-     * writePush()}. 2) Rewrite {@code push0()} to something like the following:
-     * <pre>{@code
-     *     Lockable<Queue<M>> lq = c.map().readGet(map -> map.get(message.queue()));
-     * 
-     *     if (lq == null) {
-     *         writePush(message);
-     *         return;
-     *     }
-     * 
-     *     lq.write(q -> q.add(message));
-     * 
-     *     if (lq != c.map().readGet(map -> map.get(message.queue()))) {
-     *         // Queue instance is no longer in the map, someone removed or replaced him.
-     *         writePush(message);
-     *     }
-     * }</pre>
-     * 
-     * That is exactly what this author did. However, even before reaching
-     * benchmarking, {@code AbstractQueueTest.test_at_least_once()} showed that
-     * {@code ReadWriteLockedQS} suffered greatly. This concurrency test went
-     * from taking about 5-6 seconds (which is about the same for all
-     * implementations, although sometimes ReadWriteLockedQS take much longer)
-     * to several minutes. Turning off lazy eviction reduced this time cost to
-     * about 20-22 seconds. But still, the punishment was severe and it is a
-     * hint that {@code ReentrantReadWriteLock}s read locks are underperforming
-     * significantly.<p>
-     * 
-     * Since I want the framework (this class) to be comparable across
-     * all implementations without producing skewed results for just one of
-     * the implementations, I had to rollback the change. This goes to show that
-     * in real life, a final solution might need to be tailored for the
-     * thread-safety mechanism in place. It also shows that these mechanisms are
-     * not as exchangeable with each other as we might first think.<p>
-     * 
-     * TODO: Investigate. Also seems like lazy eviction on/off affect
-     * ReadWriteLockedQS greatly with the optimization in place.
+     * visible to other threads.
      */
     @Override
     public final void push(String queue, String message) {
