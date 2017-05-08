@@ -28,10 +28,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
- * Loads of unit tests for any {@code QueueService} implementation.<p>
- * 
- * TODO: Rename to AbstractQueueServiceTest. Also find references to the old
- * name, there is one in JavaDoc of {@code AbstractQS.push()}.
+ * Loads of unit tests for any {@code QueueService} implementation.
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
@@ -39,7 +36,7 @@ import org.testng.annotations.Test;
 // But, a bug force me to put this annotation on the class.
 // See: https://github.com/cbeust/testng/issues/1222#issuecomment-289232703
 @Test
-public abstract class AbstractQueueTest
+public abstract class AbstractQSTest
 {
     protected abstract Function<Duration, QueueService> getFactory();
     

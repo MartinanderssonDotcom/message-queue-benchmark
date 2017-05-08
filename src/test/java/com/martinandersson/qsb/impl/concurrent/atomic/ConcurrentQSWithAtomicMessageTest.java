@@ -1,7 +1,7 @@
 package com.martinandersson.qsb.impl.concurrent.atomic;
 
 import com.martinandersson.qsb.api.QueueService;
-import com.martinandersson.qsb.impl.AbstractQueueTest;
+import com.martinandersson.qsb.impl.AbstractQSTest;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -10,7 +10,7 @@ import java.util.function.Function;
  * 
  * @author Martin Andersson (webmaster at martinandersson.com)
  */
-public class ConcurrentQSWithAtomicMessageTest extends AbstractQueueTest
+public class ConcurrentQSWithAtomicMessageTest extends AbstractQSTest
 {
     @Override
     protected final Function<Duration, QueueService> getFactory() {
