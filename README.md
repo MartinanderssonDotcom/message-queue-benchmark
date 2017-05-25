@@ -4,7 +4,8 @@ Will provide an undefined number of different implementations of an in-memory
 queue service. Purpose is to benchmark different ways to achieve thread-safety
 in Java, given a very real application-context.
 
-TODO: Write more stuff.
+Supportive documentation such as the research paper (a bachelor thesis) is
+provided in subfolder `.thesis/`.
 
 
 
@@ -23,18 +24,23 @@ recommended that you use `gradlew` instead of `gradle` when running Gradle tasks
 
 ## Run unit tests
 
-Three guys are provided:
+Four queue service implementations are provided and these can be tested
+separately:
 
 ```sh
-gradlew test --tests *FirstTest
+gradlew test --tests *ConcurrentQSWithPojoMessageTest
 ```
 
 ```sh
-gradlew test --tests *SecondTest
+gradlew test --tests *ConcurrentQSWithAtomicMessageTest
 ```
 
 ```sh
-gradlew test --tests *ThirdTest
+gradlew test --tests *ReadWriteLockedQSTest
+```
+
+```sh
+gradlew test --tests *SynchronizedQSTest
 ```
 
 Or run all:
@@ -51,9 +57,25 @@ Running one or all tests yield an HTML report you can find here:
 
 ## Run benchmarks
 
-TODO
+The Gradle project provides a task named `bench` that launch benchmarks. This
+task move a set of supported properties into the Java runtime as system
+properties and then run the main method in [`StartJmh`].
+
+The main benchmark harness in focus for this project is
+[`QueueServiceBenchmark`]. This class has a number of nested classes that each
+declare benchmarks with the only difference being measurement modes.
+
+[`QueueServiceBenchmark`] make use of- and support all [`SystemProperties`]. The
+most important one being a regex that dictate which benchmarks to run. Please
+see the JavaDoc of each literal found in [`SystemProperties`] to learn how they
+are used.
+
+
 
 
 
 [Gradle]: <https://gradle.org>
 [Gradle Wrapper]: https://docs.gradle.org/current/userguide/gradle_wrapper.html
+[`StartJmh`]: https://github.com/Martinanderssondotcom/queue-service-benchmark/blob/master/src/test/java/com/martinandersson/qsb/benchmark/StartJmh.java
+[`QueueServiceBenchmark`]: https://github.com/Martinanderssondotcom/queue-service-benchmark/blob/master/src/test/java/com/martinandersson/qsb/benchmark/QueueServiceBenchmark.java
+[`SystemProperties`]: https://github.com/Martinanderssondotcom/queue-service-benchmark/blob/master/src/test/java/com/martinandersson/qsb/benchmark/SystemProperties.java
