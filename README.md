@@ -4,8 +4,7 @@ Will provide an undefined number of different implementations of an in-memory
 queue service. Purpose is to benchmark different ways to achieve thread-safety
 in Java, given a very real application-context.
 
-Supportive documentation such as the research paper (a bachelor thesis) is
-provided in subfolder `.thesis/`.
+Read more in the [research paper].
 
 
 
@@ -73,7 +72,7 @@ are used.
 
 
 
-
+[research paper]: <https://github.com/martinanderssondotcom/queue-service-benchmark/blob/master/Java%20concurrency%20benchmark.pdf>
 [Gradle]: <https://gradle.org>
 [Gradle Wrapper]: https://docs.gradle.org/current/userguide/gradle_wrapper.html
 [`StartJmh`]: https://github.com/Martinanderssondotcom/queue-service-benchmark/blob/master/src/test/java/com/martinandersson/qsb/benchmark/StartJmh.java
